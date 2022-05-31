@@ -1,9 +1,11 @@
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen, Request
 import pandas as pd
 import ticker
 import numpy as np
+import calendar
 class url:
     def __init__(self, host='', path='', query='') -> str:
         self.setURL(host, path, query)
@@ -52,7 +54,13 @@ class fnguide(url):
             body = {}
             column = 0
             body['STKCODE'] = [stkCode for i in range(len(list_date)-1)]
-            body['DATE'] = list_date[1:]
+            body['DATE'] =[]
+            for i in list_date[1:]:
+                try:
+                    body['DATE'].append(datetime(year=i[0:4], month=i[5:], day = 1).date().replace(day = calendar.monthcalendar(i[0:4], i[5:])))
+                except:
+                    body['DATE'].append(i)
+            
             body['REPORT'] = [tablename[-1] for i in range(len(list_date)-1)]
             for trtag in _div.find('tbody').find_all('tr'):
                 values=[]
@@ -89,11 +97,22 @@ class fnguide(url):
         
         dict_df = self.tableTodf(html, stkCode)
         dict_df['SonikY'].drop([4,5], axis=0, inplace=True)
+        
         dict_df['CashY'].columns = ticker.CASH.values()
         dict_df['DaechaY'].columns = ticker.DEACHA.values()
-        dict_df['SonikY'].columns = ticker.SONIK.values()        
+        dict_df['SonikY'].columns = ticker.SONIK.values()
         
-        return [dict_df['SonikY'], dict_df['DaechaY'], dict_df['CashY']]
+        dict_df['CashQ'].columns = ticker.CASH.values()
+        dict_df['DaechaQ'].columns = ticker.DEACHA.values()
+        dict_df['SonikQ'].columns = ticker.SONIK.values()
+        dict_df['SonikQ'].drop([4,5], axis=0, inplace=True)
+        
+        if dict_df['SonikY'].iloc[0,2] == 'Y':
+            dict_df['SonikY'].drop(3, axis=0, inplace=True)  
+            dict_df['DaechaY'].drop(3, axis=0, inplace=True)
+            dict_df['CashY'].drop(3, axis=0, inplace=True)
+        
+        return [dict_df['SonikY'], dict_df['DaechaY'], dict_df['CashY'],dict_df['SonikQ'], dict_df['DaechaQ'], dict_df['CashQ'] ]
     
     
 

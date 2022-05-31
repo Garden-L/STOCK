@@ -12,9 +12,9 @@ import time
 from pykrx import stock
 import pandas as pd
 import numpy as np
+import sqlalchemy as db
 
-
-
+engine = db.create_engine('mysql+pymysql://root:root@localhost/a')
 class datesave:
     def __init__(self):
         #self.tickers = stock.get_market_ticker_list(now)
@@ -22,7 +22,6 @@ class datesave:
         pass
     
     def get_market_ohlcv(self, now=datetime.now()):
-        
         df = stock.get_market_ohlcv(now.replace('-',''), market='ALL')
         df.columns = ['code', 'open', 'high', 'low', 'close', 'volume', 'value', 'rate', 'marketcap', 'shares']
         df['date'] = now
@@ -39,6 +38,15 @@ class datesave:
         dates = [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((end-start).days+1)]
         return dates
         
+    def df_replace_save(self, df : pd.DataFrame, user, password, server, db, table):
+        for idx in range(len(df)):
+            columns = ','.join(df.columns)
+            values = ["'"+str(x)+"'" for x in df.iloc[idx]]
+            print(columns)
+            print(values)
+            sql = 'replace into {2}({0}) values({1})'.format(columns, ','.join(values), table)            
+            print(sql)
+            engine.execute(sql)
 
 OPEN = 'OPEN_PRICE'
 CLOSE = 'CLOSE_PRICE'
@@ -62,7 +70,7 @@ def get_chartdata_days(start:str, end : str, stkCode):
     df_naver = stock.get_market_ohlcv(start, end, stkCode, )
     df_krx = stock.get_market_ohlcv(start, end, stkCode, adjusted=False)
     
-    if(not df_naver.empty and not df_krx.empty):
+    if(not df_naver.empty and not df_krx.empty):        
         df = pd.merge(left=df_naver, right=df_krx, how='inner', on='날짜', suffixes=['_naver', '_krx'])
         
         df['주식수'] = np.int64((df['시가총액'] / df['종가_naver']))
@@ -88,47 +96,53 @@ def get_chartdata_days(start:str, end : str, stkCode):
         
         return df
     
-    return False 
+    return df.DataFrame()
         
         
 if __name__ =='__main__':
-    #print(get_chartdata_days("20000101", "20211231", '005930'))
-    code = stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSPI')
-    time.sleep(4)
-    code += stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSDAQ')
-    saved = code.copy()
-    a = datesave()
-    cnt= 0
+    # #print(get_chartdata_days("20000101", "20211231", '005930'))
+    # code = stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSPI')
+    # time.sleep(4)
+    # code += stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSDAQ')
+    # saved = code.copy()
+    # a = datesave()
+    # cnt= 0
+    # # for d in code:
+    # #     cnt +=1
+    # #     print(cnt)
+    # #     df = get_chartdata_days('20170101','20220511', d)
+    # #     print(df)
+    # #     try:
+    # #         a.df_save(df, 'root', 'root', 'localhost', 'stock', 'stock')
+    # #         saved.pop(saved.index(d))
+    # #     except :
+    # #         print('에러')
+    # #         print(saved)
+    # #         pass
+    # #     time.sleep(15)
+
+    # from FnGuide import fnguide
+    
+    # Fn = fnguide()
     # for d in code:
+    #     print(d)
     #     cnt +=1
     #     print(cnt)
-    #     df = get_chartdata_days('20170101','20220511', d)
-    #     print(df)
+
     #     try:
-    #         a.df_save(df, 'root', 'root', 'localhost', 'stock', 'stock')
-    #         saved.pop(saved.index(d))
+    #         df = Fn.get_Finance(d, 'D')           
+    #         print('에러확인')
+    #         a.df_save(df[0], 'root', 'root', 'localhost', 'stock', 'sonik')
+    #         a.df_save(df[1], 'root', 'root', 'localhost', 'stock', 'deacha')
+    #         a.df_save(df[2], 'root', 'root', 'localhost', 'stock', 'cash')
     #     except :
     #         print('에러')
-    #         print(saved)
     #         pass
-    #     time.sleep(15)
-
-    from setting import fnguide
+    #     time.sleep(10)
     
-    Fn = fnguide()
-    for d in code:
-        print(d)
-        cnt +=1
-        print(cnt)
-
-        try:
-            df = Fn.get_Finance(d, 'D')           
-            print('에러확인')
-            a.df_save(df[0], 'root', 'root', 'localhost', 'stock', 'sonik')
-            a.df_save(df[1], 'root', 'root', 'localhost', 'stock', 'deacha')
-            a.df_save(df[2], 'root', 'root', 'localhost', 'stock', 'cash')
-        except :
-            print('에러')
-            pass
-        time.sleep(10)
+    
+    df = get_chartdata_days('20170101', '20220101', '005930')
+    print(df)
+    t = datesave()
+    t.df_replace_save(df, 'root', 'root', 'localhost', 'a', 'b')
     

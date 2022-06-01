@@ -14,11 +14,10 @@ import pandas as pd
 import numpy as np
 import sqlalchemy as db
 
-engine = db.create_engine('mysql+pymysql://root:root@localhost/a')
+
 class datesave:
     def __init__(self):
-        #self.tickers = stock.get_market_ticker_list(now)
-        #print(self.tickers)
+        engine = db.create_engine('mysql+pymysql://root:root@localhost/a')
         pass
     
     def get_market_ohlcv(self, now=datetime.now()):
@@ -30,7 +29,7 @@ class datesave:
     def df_save(self, df, user,password, server, db, table):
         engine = create_engine('mysql+pymysql://{}:{}@{}/{}?charset=utf8'.format(user, password, server, db))
         df.to_sql(name=table, con=engine, if_exists='append', index=False)
-        engine.dispose()
+        self.engine.dispose()
     
     def date_range(self, start, end):
         start = datetime.strptime(start, "%Y-%m-%d")
@@ -42,11 +41,8 @@ class datesave:
         for idx in range(len(df)):
             columns = ','.join(df.columns)
             values = ["'"+str(x)+"'" for x in df.iloc[idx]]
-            print(columns)
-            print(values)
             sql = 'replace into {2}({0}) values({1})'.format(columns, ','.join(values), table)            
-            print(sql)
-            engine.execute(sql)
+            self.engine.execute(sql)
 
 OPEN = 'OPEN_PRICE'
 CLOSE = 'CLOSE_PRICE'
@@ -100,10 +96,9 @@ def get_chartdata_days(start:str, end : str, stkCode):
         
         
 if __name__ =='__main__':
-    # #print(get_chartdata_days("20000101", "20211231", '005930'))
-    # code = stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSPI')
-    # time.sleep(4)
-    # code += stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSDAQ')
+    code = stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSPI')
+    time.sleep(4)
+    code += stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSDAQ')
     # saved = code.copy()
     # a = datesave()
     # cnt= 0
@@ -139,10 +134,7 @@ if __name__ =='__main__':
     #         print('에러')
     #         pass
     #     time.sleep(10)
-    
-    
-    df = get_chartdata_days('20170101', '20220101', '005930')
-    print(df)
+        
     t = datesave()
     t.df_replace_save(df, 'root', 'root', 'localhost', 'a', 'b')
     

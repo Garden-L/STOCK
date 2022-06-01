@@ -6,6 +6,13 @@ import pandas as pd
 import ticker
 import numpy as np
 import calendar
+import pandas as pd
+import numpy as np
+import sqlalchemy as db
+from datetime import datetime, timedelta
+from pykrx import stock
+import time
+from db import datasave
 class url:
     def __init__(self, host='', path='', query='') -> str:
         self.setURL(host, path, query)
@@ -57,7 +64,9 @@ class fnguide(url):
             body['DATE'] =[]
             for i in list_date[1:]:
                 try:
-                    body['DATE'].append(datetime(year=i[0:4], month=i[5:], day = 1).date().replace(day = calendar.monthcalendar(i[0:4], i[5:])))
+                    date = datetime(year=int(i[0:4]), month=int(i[5:]), day = 1).date()
+                    date = date.replace(day= calendar.monthrange(date.year, date.month)[1])
+                    body['DATE'].append(date)
                 except:
                     body['DATE'].append(i)
             
@@ -112,9 +121,30 @@ class fnguide(url):
             dict_df['DaechaY'].drop(3, axis=0, inplace=True)
             dict_df['CashY'].drop(3, axis=0, inplace=True)
         
-        return [dict_df['SonikY'], dict_df['DaechaY'], dict_df['CashY'],dict_df['SonikQ'], dict_df['DaechaQ'], dict_df['CashQ'] ]
+        return {'SonikY' :dict_df['SonikY'], 'DaechaY':dict_df['DaechaY'], 'CashY':dict_df['CashY'],'SonikQ':dict_df['SonikQ'], 'DaechaQ':dict_df['DaechaQ'], 'CashQ':dict_df['CashQ']}
     
     
 
 if __name__ =='__main__':
-    print(fnguide().get_Finance('005930','D'))
+    fn = fnguide()
+
+    save = datasave('root','root', 'localhost', 'my_stock')
+    code = stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSPI')
+    time.sleep(4)
+    code += stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSDAQ')
+    
+    for i in code:
+        print(i)
+        try:
+            df = fn.get_Finance(i, 'D')
+
+            save.df_replace_save(df['SonikY'],'sonik')
+            save.df_replace_save(df['SonikQ'],'sonik')
+            save.df_replace_save(df['DaechaY'], 'daecha')
+            save.df_replace_save(df['DaechaQ'], 'daecha')
+            save.df_replace_save(df['CashY'], 'cash')
+            save.df_replace_save(df['CashQ'], 'cash')
+        except:
+            print("에러")
+        
+        time.sleep(5)

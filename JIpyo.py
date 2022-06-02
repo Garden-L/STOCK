@@ -4,27 +4,15 @@ import sqlalchemy as db
 import pandas as pd
 from datetime import datetime as dt, timedelta
 from dateutil.relativedelta import relativedelta
-engine = db.create_engine('mysql+pymysql://root:root@localhost/stock')
-def getCompanyInfo(date):
-    sql = '''
-            select O.STKCODE, O.DATE, O.CLOSE_PRICE, O.TRDVOL, O.TRDVAL, O.MARKETCAP, O.SHARES,
-                    D.DATE AS REPORT_DATE, D.REPORT, D.Assets_Total, D.Current_Inventory, D.Current_Fin_Assets, D.Cash_and_Cash_Equivalents, D.Current_Receviables,  D.Current_Liab_Total, D.Current_Payables, D.Current_Emp_Benefits, D.LT_Liab_Total, D.LT_Payables, D.LT_Emp_Benefits,  D.Equity_Total, D.Controlling_Equity_Total, D.Current_Assets_Total,
-                    S.REV, S.GROSS, S.CGS,  S.OPR, S.SGA_2, S.NETINC, S.NETINC_1, S.FINCOST, S.FININC, S.TAX,
-                    C.Add_Exp_WO_CF_Out_5, C.Add_Exp_WO_CF_Out_6, C.CFO_Total
-                FROM OHLCV O 
-                INNER JOIN deacha D 
-                        ON O.stkcode= D.stkcode AND date(concat(year(date_add(O.date,interval -1 year)), '-12-31')) = D.date
-                INNER JOIN CASH C
-                        ON O.stkcode= C.stkcode AND date(concat(year(date_add(O.date,interval -1 year)), '-12-31')) = C.date
-                INNER JOIN SONIK S
-                        ON O.stkcode= S.stkcode AND date(concat(year(date_add(O.date,interval -1 year)), '-12-31')) = S.date
-                WHERE O.DATE = DATE('{}');
-        '''\
-        .format(date)
+from db import data as db
 
-    ret: pd.DataFrame = pd.read_sql(sql, engine.connect())
-    
-    return ret
+data = db('root','root', 'localhost', 'my_stock')
+
+def getOHLCV(date):
+    return data.getOHLCV(data)
+
+def getCompanyInfo(date):
+    return data.getCompanyInfo(date)
 
 #완료
 def getEPS(df:pd.DataFrame) -> pd.DataFrame:
@@ -51,7 +39,7 @@ def getCFPS(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-#완성
+#주가현금흐름
 def getPCR(df:pd.DataFrame) -> pd.DataFrame:
     df = getCFPS(df)
     df['PCR'] = df['MARKETCAP'] / df['CF']
@@ -76,13 +64,13 @@ def getEV(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-#완료
+#주당순자산 (PBR이 1보다 낮으면 주당 장부가치가)
 def getPBR(df:pd.DataFrame) -> pd.DataFrame:
     df['PBR'] = df['MARKETCAP'] / df['Equity_Total']
     
     return df
 
-#완료
+#주당매출액 ( 매출액보다 주가가 낮다면 1.0 미만)
 def getPSR(df:pd.DataFrame) -> pd.DataFrame:
     #실질 매출액
     df['PSR'] = df['MARKETCAP'] / df['REV']
@@ -159,30 +147,10 @@ def getProfitMargin(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def getPrevCompanyInfo(date, prevYear: int):
-    sql = '''
-            select O.STKCODE, O.DATE, O.CLOSE_PRICE, O.TRDVOL, O.TRDVAL, O.MARKETCAP, O.SHARES,
-                    D.DATE AS REPORT_DATE, D.REPORT, D.Assets_Total, D.Current_Fin_Assets, D.Cash_and_Cash_Equivalents, D.Current_Liab_Total, D.Current_Payables, D.Current_Emp_Benefits, D.LT_Liab_Total, D.LT_Payables, D.LT_Emp_Benefits,  D.Equity_Total, D.Controlling_Equity_Total, Current_Assets_Total,
-                    S.REV, S.GROSS, S.OPR, S.SGA_2, S.NETINC, S.NETINC_1,
-                    C.Add_Exp_WO_CF_Out_5, C.Add_Exp_WO_CF_Out_6, C.CFO_Total
-                FROM OHLCV O 
-                INNER JOIN deacha D 
-                        ON O.stkcode= D.stkcode AND date(concat(year(date_add(O.date,interval -{1} year)), '-12-31')) = D.date
-                INNER JOIN CASH C
-                        ON O.stkcode= C.stkcode AND date(concat(year(date_add(O.date,interval -{1} year)), '-12-31')) = C.date
-                INNER JOIN SONIK S
-                        ON O.stkcode= S.stkcode AND date(concat(year(date_add(O.date,interval -{1} year)), '-12-31')) = S.date
-                WHERE O.DATE = DATE('{0}');
-        '''\
-        .format(date, prevYear)
-
-    ret = pd.read_sql(sql, engine.connect())
-    
-    return ret
     
 #PEG
 def getPEG(df, prevYear:int):
-    df2 = getPrevCompanyInfo(df['DATE'][0], prevYear)
+    df2 = data.getPrevCompanyInfo(df['DATE'][0], prevYear)
     getEPS(df)
     getEPS(df2)
     
@@ -196,7 +164,7 @@ def getPEG(df, prevYear:int):
 
 #자산 성장률
 def geTAG(df, prevYear:int):
-    df2 = getPrevCompanyInfo(df['DATE'][0], prevYear)
+    df2 = data.getPrevCompanyInfo(df['DATE'][0], prevYear)
     
     df2 = df2[['STKCODE','Assets_Total']]
     
@@ -207,7 +175,7 @@ def geTAG(df, prevYear:int):
 
 #순이익 증가율
 def geNIG(df, prevYear:int):
-    df2 = getPrevCompanyInfo(df['DATE'][0], prevYear)
+    df2 = data.getPrevCompanyInfo(df['DATE'][0], prevYear)
     
     df2 = df2[['STKCODE','Assets_Total']]
     
@@ -218,7 +186,7 @@ def geNIG(df, prevYear:int):
 
 #매출 증가율
 def getRG(df, prevYear:int):
-    df2 = getPrevCompanyInfo(df['DATE'][0], prevYear)
+    df2 = data.getPrevCompanyInfo(df['DATE'][0], prevYear)
     
     df2 = df2[['STKCODE','REV']]
     
@@ -229,7 +197,7 @@ def getRG(df, prevYear:int):
 
 #영업 이익 증가율
 def getOIG(df, prevYear:int):
-    df2 = getPrevCompanyInfo(df['DATE'][0], prevYear)
+    df2 = data.getPrevCompanyInfo(df['DATE'][0], prevYear)
     
     df2 = df2[['STKCODE','OPR']]
     
@@ -277,7 +245,7 @@ def getF_score(df, prevYear):
     getGrossMargin(df)
     getAssetTurnover(df)
     
-    df2 = getPrevCompanyInfo(df['DATE'][0], prevYear)
+    df2 = data.getPrevCompanyInfo(df['DATE'][0], prevYear)
     getROA(df2)
     getLiabRatio(df2)
     getCurrentRatio(df2)
@@ -318,19 +286,25 @@ def getGreenBlatt(df):
     getEBIT(df)
     
     df['GreenBlatt'] = df['EBIT'] / (df['Assets_Total']-df['Current_Liab_Total'])
-    
+
     return df
 
-def df_filter(df, columns, cond:list):
-    for i in range(len(cond)):
-        if(cond[i][0] == 'asc'):
-            df = df.sort_values(by=columns[i], ascending=cond[i][1])
-        else:
-            df = df.query(('{b} >= {f} and {b} <={c}').format(b=columns[i], f = cond[i][0], c = cond[i][1]))
 
-        df.replace([numpy.inf, -numpy.inf], numpy.nan, inplace=True)
-        df.dropna(axis=0, inplace =True)
-    return df[['STKCODE', 'CLOSE_PRICE']+ columns]
+def df_filter(df, column, min=-numpy.inf, max=numpy.inf, n=None, asc=True):
+    df = df.replace([numpy.inf, -numpy.inf], numpy.nan)
+    df = df.query(('{b} >= {f} and {b} <={c}').format(b=column, f = min, c = max))
+    df = df.sort_values(by=column, ascending=asc)
+    df = df.head(n)
+    
+    return df[['STKCODE', column]]
+
+def df_combine(*args, how='and'):
+    how_dict = {'and':'inner', 'or':'outer'}
+    df = args[0]
+    for other in args[1:]:
+        df = df.join(other.set_index('STKCODE'), on='STKCODE')
+    df.dropna(inplace=True)
+    return df
 
 def getRIM(df, rate):
     getBPS(df)
@@ -340,10 +314,14 @@ def getRIM(df, rate):
     
     return df
 
-df = getCompanyInfo('2022-05-10')
-df= getRIM(df, 0.1)
-df = df_filter(df, ['RIM'], [['asc',True]])
-df.to_csv('./rim.csv')
+
+if __name__ == '__main__':
+    df = getCompanyInfo('2022-05-10')
+    df= getPER(df)
+    
+    df = filter(df, 'PER', 0, 12, 30, True)
+    print(df)
+# df.to_csv('./rim.csv')
 
 # df =getPER(df)
 # df=getF_score(df,2)

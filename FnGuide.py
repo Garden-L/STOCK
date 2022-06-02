@@ -12,7 +12,7 @@ import sqlalchemy as db
 from datetime import datetime, timedelta
 from pykrx import stock
 import time
-from db import datasave
+from db import data
 class url:
     def __init__(self, host='', path='', query='') -> str:
         self.setURL(host, path, query)
@@ -128,7 +128,7 @@ class fnguide(url):
 if __name__ =='__main__':
     fn = fnguide()
 
-    save = datasave('root','root', 'localhost', 'my_stock')
+    save = data('root','root', 'localhost', 'my_stock')
     code = stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSPI')
     time.sleep(4)
     code += stock.get_market_ticker_list(datetime.now().strftime('%Y-%m-%d'), 'KOSDAQ')

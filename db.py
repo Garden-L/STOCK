@@ -34,10 +34,10 @@ class data:
         sql = '''
                 SELECT STKCODE, Assets_Total, Current_Inventory, Current_Fin_Assets, Cash_and_Cash_Equivalents, Current_Receviables,  Current_Liab_Total, Current_Payables, Current_Emp_Benefits, LT_Liab_Total, LT_Payables, LT_Emp_Benefits,  Equity_Total, Controlling_Equity_Total, Current_Assets_Total,
                         sum(REV) REV, sum(GROSS) GROSS, SUM(CGS) CGS,  SUM(OPR) OPR, SUM(SGA_2) SGA_2, SUM(NETINC) NETINC, SUM(NETINC_1) NETINC_1, SUM(FINCOST) FINCOST, SUM(FININC) FININC, sum(TAX) TAX,
-                    sum(Add_Exp_WO_CF_Out_5) Add_Exp_WO_CF_Out_5, sum(Add_Exp_WO_CF_Out_6) Add_Exp_WO_CF_Out_6, sum(CFO_Total) CFO_Total
+                    sum(Add_Exp_WO_CF_Out_5) Add_Exp_WO_CF_Out_5, sum(Add_Exp_WO_CF_Out_6) Add_Exp_WO_CF_Out_6, sum(CFO_Total) CFO_Total, sum(Liabilities_Total) as Liabilities_Total
             FROM (
                     SELECT S.STKCODE,
-                        D.DATE AS REPORT_DATE, D.REPORT, D.Assets_Total, D.Current_Inventory, D.Current_Fin_Assets, D.Cash_and_Cash_Equivalents, D.Current_Receviables,  D.Current_Liab_Total, D.Current_Payables, D.Current_Emp_Benefits, D.LT_Liab_Total, D.LT_Payables, D.LT_Emp_Benefits,  D.Equity_Total, D.Controlling_Equity_Total, D.Current_Assets_Total,
+                        D.DATE AS REPORT_DATE, D.REPORT, D.Assets_Total, D.Current_Inventory, D.Current_Fin_Assets, D.Cash_and_Cash_Equivalents, D.Current_Receviables, D.Liabilities_Total,  D.Current_Liab_Total, D.Current_Payables, D.Current_Emp_Benefits, D.LT_Liab_Total, D.LT_Payables, D.LT_Emp_Benefits,  D.Equity_Total, D.Controlling_Equity_Total, D.Current_Assets_Total,
                         S.REV, S.GROSS, S.CGS,  S.OPR, S.SGA_2, S.NETINC, S.NETINC_1, S.FINCOST, S.FININC, S.TAX,
                         C.Add_Exp_WO_CF_Out_5, C.Add_Exp_WO_CF_Out_6, C.CFO_Total,
                         RANK() OVER (PARTITION BY stkcode ORDER BY S.date desc) AS a
@@ -55,6 +55,7 @@ class data:
         df2 =  pd.DataFrame = pd.read_sql(sql, self.engine.connect())
         
         df = df1.merge(df2, how='inner', on='STKCODE')
+        print(df.STKCODE)
         return df
 
     

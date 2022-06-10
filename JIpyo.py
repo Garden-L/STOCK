@@ -14,13 +14,13 @@ def getOHLCV(date):
 def getCompanyInfo(date):
     return data.getCompanyInfo(date)
 
-#완료
+#EPS
 def getEPS(df:pd.DataFrame) -> pd.DataFrame:
     df['EPS'] = df['NETINC'] / df['SHARES']
     
     return df
 
-#완료
+#PER
 def getPER(df:pd.DataFrame) -> pd.DataFrame:
     df['PER'] = df['MARKETCAP'] / df['NETINC'] 
     
@@ -46,7 +46,7 @@ def getPCR(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-#완성
+#EBIT
 def getEBIT(df:pd.DataFrame) -> pd.DataFrame:
     df['EBIT'] = df['NETINC'] + df['TAX'] - df['FININC'] +df['FINCOST']
     
@@ -58,6 +58,7 @@ def getNetDebt(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
+#EV
 def getEV(df:pd.DataFrame) -> pd.DataFrame:
     df = getNetDebt(df)
     df['EV'] = df['MARKETCAP'] + df['NetDebt']
@@ -77,7 +78,7 @@ def getPSR(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-#완료
+#ROA
 def getROA(df:pd.DataFrame) -> pd.DataFrame:
     #%
     df['ROA'] = df['NETINC'] / df['Assets_Total'] *100
@@ -92,7 +93,7 @@ def getEBITDA(df:pd.DataFrame) -> pd.DataFrame:
 def getEV_EBITDA(df:pd.DataFrame) -> pd.DataFrame:
     df = getEV(df)
     df = getEBITDA(df)
-    df['EV/EBITDA'] = df['EV'] / df['EBITDA']
+    df['EV_EBITDA'] = df['EV'] / df['EBITDA']
     
     return df
 
@@ -147,6 +148,18 @@ def getProfitMargin(df:pd.DataFrame) -> pd.DataFrame:
     
     return df
 
+#순유동자산
+def getNCAV(df):
+    df['NCAV'] = df['Current_Assets_Total'] - df['Liabilities_Total']
+    
+    return df
+
+def Safety_Margin(df):
+    ncav = getNCAV(df)
+    
+    df['Safety_Margin'] = ncav['NCAV'] - df['MARKETCAP']*1.5
+    
+    return df
     
 #PEG
 def getPEG(df, prevYear:int):
@@ -238,7 +251,7 @@ def getCurrentRatio(df):
     return df
 
 #F_score
-def getF_score(df, prevYear):
+def getF_Score(df, prevYear):
     getROA(df)
     getCurrentRatio(df)
     getLiabRatio(df)
@@ -265,7 +278,6 @@ def getF_score(df, prevYear):
     
     df['F_Score']= 0
 
-    df.to_csv('./merge1.csv')
     df.loc[df['ROA'] >0, 'F_ROA'] = 1
     df.loc[df['ROA'] > df['ROA_prev'], 'F_ROA_dt'] = 1
     df.loc[df['CFO_Total']>0, 'F_CFO'] = 1
@@ -280,15 +292,12 @@ def getF_score(df, prevYear):
     
     return df
 
-#그린블라트
-def getGreenBlatt(df):
-    getPER(df)
+def getROC(df):
     getEBIT(df)
     
-    df['GreenBlatt'] = df['EBIT'] / (df['Assets_Total']-df['Current_Liab_Total'])
+    df['ROC'] = df['EBIT'] / (df['Assets_Total']-df['Current_Liab_Total'])
 
     return df
-
 
 def df_filter(df, column, min=-numpy.inf, max=numpy.inf, n=None, asc=True):
     df = df.replace([numpy.inf, -numpy.inf], numpy.nan)

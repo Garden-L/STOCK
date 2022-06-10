@@ -121,9 +121,14 @@ class fnguide(url):
             dict_df['DaechaY'].drop(3, axis=0, inplace=True)
             dict_df['CashY'].drop(3, axis=0, inplace=True)
         
-        return {'SonikY' :dict_df['SonikY'], 'DaechaY':dict_df['DaechaY'], 'CashY':dict_df['CashY'],'SonikQ':dict_df['SonikQ'], 'DaechaQ':dict_df['DaechaQ'], 'CashQ':dict_df['CashQ']}
-    
-    
+        return {
+                'SonikY' :dict_df['SonikY'], 
+                'DaechaY':dict_df['DaechaY'], 
+                'CashY':dict_df['CashY'],
+                'SonikQ':dict_df['SonikQ'], 
+                'DaechaQ':dict_df['DaechaQ'], 
+                'CashQ':dict_df['CashQ']
+                }
 
 if __name__ =='__main__':
     fn = fnguide()

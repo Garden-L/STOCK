@@ -63,9 +63,7 @@ def get_chartdata_days(start:str, end : str, stkCode):
         return df
     
     return df.DataFrame()
-        
-def get_company_info(): 
-    
+
 
 if __name__ =='__main__':
     save = data('root','root', 'localhost', 'my_stock')
